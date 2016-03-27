@@ -1,16 +1,11 @@
 -- User: dugging
 SCL = require 'HC'
 Cam = require 'camera'
+Cardinal = require 'Cardinal'
 require 'Classes'
 
 Keys = {}
-Objects = {}
-Items = {}
-Entities = {}
-textures = {}
-player = {}
 camScale = 2
-ItemInstances = {}
 
 
 function love.load()
@@ -18,34 +13,38 @@ function love.load()
     love.graphics.setBackgroundColor( 255,000,255)
 
     --Textures
-    textures = {player=love.graphics.newImage("Textures/Player.png"),wall1=love.graphics.newImage("Textures/Wall.png"),chest1=love.graphics.newImage("Textures/Chest.png"), item1={sprite=love.graphics.newImage("Textures/Item.png"), icon=love.graphics.newImage("Textures/ItemIcon.png")}}
+    Cardinal.textures = {player=love.graphics.newImage("Textures/Player.png"),wall1=love.graphics.newImage("Textures/Wall.png"),chest1=love.graphics.newImage("Textures/Chest.png"), item1={sprite=love.graphics.newImage("Textures/Sword_1.png"), icon=love.graphics.newImage("Textures/ItemIcon.png")}}
     --Items
-    Items[1] = Item:new({sprite=textures.item1.sprite, icon=textures.item1.icon, image=textures.item1.sprite, rarity=1, fn=function() print("Item1 activate.") end, collisions={interact=SCL.circle(100,100, 25), draw=false}})
+    Cardinal.Items[1] = Item:new({sprite=Cardinal.textures.item1.sprite, icon=Cardinal.textures.item1.icon, image=Cardinal.textures.item1.sprite, rarity=1, fn=function() print("Item1 activate.") end, collisions={interact=SCL.circle(100,100, 25), draw=false}})
     --Entities
-    player = Player:new{x=400, y=300, sprite=textures.player, collisions={solid= SCL.rectangle(400,300,128,128), interact=SCL.rectangle(350,250,228,228)}, angle=0}
+    table.insert(Cardinal.players, Player:new{x=400, y=300, sprite=Cardinal.textures.player, collisions={solid= SCL.rectangle(400,300,100,60), interact=SCL.rectangle(350,250,200,160)}, angle=0})
     --Objects
-    table.insert(Objects, Wall:new{x=100, y=200, sprite=textures.wall1, collisions={solid= SCL.rectangle(100,200,128,128)}})
-    table.insert(Objects, Chest:new{x=600, y=800, sprite=textures.chest1, collisions={solid= SCL.rectangle(600,800,128,128), interact=SCL.rectangle(550,750,228,228)}, items={Items[1]}})
+    table.insert(Cardinal.Objects, Wall:new{x=0, y=0, sprite=Cardinal.textures.wall1, collisions={solid= SCL.rectangle(100,200,350,240)}})
+    table.insert(Cardinal.Objects, Chest:new{x=600, y=800, sprite=Cardinal.textures.chest1, collisions={solid= SCL.rectangle(600,800,60,85), interact=SCL.rectangle(550,750,160,185)}, items={Cardinal.Items[1]}})
+
+    for i=1,len(Cardinal.Objects) do
+        Cardinal.Objects[i]:updateSolidCollision()
     end
+end
 
 function love.draw()
     camera:set()
-    camera:setPosition(player.x-love.graphics.getWidth()*(camScale/2),player.y-love.graphics.getHeight()*(camScale/2))
+    camera:setPosition(Cardinal.players[1].x-love.graphics.getWidth()*(camScale/2), Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2))
     camera:setScale(camScale, camScale)
-    
+
     --Player
-    love.graphics.draw(player.sprite, player.x, player.y, player.angle, 1, 1, player.sprite:getWidth()/2,player.sprite:getHeight()/2)
-    love.graphics.rectangle("line", player.x-player.sprite:getWidth()/2, player.y-player.sprite:getHeight()/2, player.sprite:getWidth(), player.sprite:getHeight())
+    love.graphics.draw(Cardinal.players[1].sprite, Cardinal.players[1].x, Cardinal.players[1].y, Cardinal.players[1].angle, 1, 1, Cardinal.players[1].sprite:getWidth()/2, Cardinal.players[1].sprite:getHeight()/2)
+    love.graphics.rectangle("line", Cardinal.players[1].x- Cardinal.players[1].sprite:getWidth()/2, Cardinal.players[1].y- Cardinal.players[1].sprite:getHeight()/2, Cardinal.players[1].sprite:getWidth(), Cardinal.players[1].sprite:getHeight())
 
     --Objects
-    for i=1,len(Objects) do
-        love.graphics.draw(Objects[i].sprite, Objects[i].x, Objects[i].y)
+    for i=1,len(Cardinal.Objects) do
+        love.graphics.draw(Cardinal.Objects[i].sprite, Cardinal.Objects[i].x, Cardinal.Objects[i].y)
     end
 
     --Items
-    for i=1, len(ItemInstances) do
-        if ItemInstances[i].draw then
-            love.graphics.draw(ItemInstances[i].sprite, ItemInstances[i].x, ItemInstances[i].y)
+    for i=1, len(Cardinal.ItemInstances) do
+        if Cardinal.ItemInstances[i].draw then
+            love.graphics.draw(Cardinal.ItemInstances[i].sprite, Cardinal.ItemInstances[i].x, Cardinal.ItemInstances[i].y)
         end
     end
 
@@ -54,17 +53,17 @@ end
 
 function love.update(dt)
     local x, y = camera:mousePosition()
-    local newWPos = {y=player.y + (y-player.y)*dt,x = player.x + (x-player.x)*dt}
-    local newSPos = {y=player.y - (y-player.y)*dt,x = player.x - (x-player.x)*dt}
+    local newWPos = {y= Cardinal.players[1].y + (y- Cardinal.players[1].y)*dt,x = Cardinal.players[1].x + (x- Cardinal.players[1].x)*dt}
+    local newSPos = {y= Cardinal.players[1].y - (y- Cardinal.players[1].y)*dt,x = Cardinal.players[1].x - (x- Cardinal.players[1].x)*dt}
 
-    player:update()
+    Cardinal.players[1]:update()
 
     --Key Handling
     if Keys["w"] then
-        player:Move(newWPos)
+        Cardinal.players[1]:Move(newWPos)
     end
     if Keys["s"] then
-        player:Move(newSPos)
+        Cardinal.players[1]:Move(newSPos)
     end
     if Keys["]"] then
         camScale = camScale + 0.2
@@ -73,14 +72,10 @@ function love.update(dt)
         camScale = camScale - 0.2
     end
     if Keys["q"] then
-        local a = player:interactCheck()
-        if type(a) == "table" then
-            for k,v in pairs(a) do
-                if v.type == "Item" then
-                    table.insert(ItemInstances, v)
-                end
-            end
-        end
+        Cardinal.players[1]:interactCheck()
+    end
+    if Keys["o"] then
+        print_r(Cardinal)
     end
     --End Key Handling
 end

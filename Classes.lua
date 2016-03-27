@@ -45,22 +45,12 @@ end
 
 
 --Object Base Class
-Object = {type="Object",x=0,y=0,sprite="",collisions={solid={},interact={}} }
+Object = {type="Object",x=0,y=0,sprite="",collisions={solid={},interact={}}, angle=0}
 function Object:collisionCheck(x, y, collision)
     local temp = false
     collision:moveTo(x, y)
-    for i=1, len(Objects) do
-        if Objects[i].collisions.solid:collidesWith(collision) then
-            temp = true
-        end
-    end
-    return temp
-end
-function Object:rotateCollisionCheck(r, collision)
-    local temp = false
-    collision:rotate(r)
-    for i=1, len(Objects) do
-        if Objects[i].collisions.solid:collidesWith(collision) then
+    for i=1, len(Cardinal.Objects) do
+        if Cardinal.Objects[i].collisions.solid:collidesWith(collision) then
             temp = true
         end
     end
@@ -72,6 +62,10 @@ function Object:new(o)
     o.type = self.type
     self.__index = self
     return o
+end
+function Object:updateSolidCollision()
+    self.collisions.solid:moveTo(self.x+self.sprite:getWidth()/2, self.y+self.sprite:getHeight()/2)
+    self.collisions.solid:rotate(self.angle)
 end
 --End Object Base Class
 
@@ -93,7 +87,7 @@ function Chest:createItems()
     local items = {}
     if not self.open then
         for i,v in pairs(self.items) do
-            table.insert(items, v:new())
+            table.insert(items, Cardinal:PickItem(self.items))
             for ii,vv in pairs(self.items[i]) do
                 items[i][ii] = vv
             end
@@ -136,17 +130,14 @@ function Player:Move(newPos)
 end
 function Player:Rotate()
     local x, y = camera:mousePosition()
-    local temp = math.atan2(y - player.y, x -player.x)+(math.pi/2)
-    if not self:rotateCollisionCheck(temp, self.collisions.solid) then
-        player.angle = temp
-    end
+    Cardinal.players[1].angle = math.atan2(y - Cardinal.players[1].y, x - Cardinal.players[1].x)+(math.pi/2)
 end
 function Player:interactCheck()
     local collides = {}
-    for i=1, len(Objects) do
-        if Objects[i].collisions.interact ~= nil then
-            if Objects[i].collisions.interact:collidesWith(self.collisions.interact) then
-                table.insert(collides, {Objects[i], math.sqrt((Objects[i].x-self.x)^2+(Objects[i].y-self.y)^2)})
+    for i=1, len(Cardinal.Objects) do
+        if Cardinal.Objects[i].collisions.interact ~= nil then
+            if Cardinal.Objects[i].collisions.interact:collidesWith(self.collisions.interact) then
+                table.insert(collides, {Cardinal.Objects[i], math.sqrt((Cardinal.Objects[i].x-self.x)^2+(Cardinal.Objects[i].y-self.y)^2)})
             end
         end
     end
@@ -165,8 +156,19 @@ end
 
 
 --Item Class << Object
-Item = Object:new({icon="", image="", stats={}, rarity=0, fn=function(...)error "Item function not defined" end})
+Item = Object:new({icon="", image="", stats={}, rarity=0, fn=function(...)error "Item function not defined" end, randWeight=0, Equalibrium={rarity=0}})
 Item.type="Item"
+function Item:new(o)
+    o = o or {}
+    setmetatable(o, self)
+    o.type = self.type
+    self.__index = self
+    self:Init()
+    return o
+end
+function Item:Init()
+    self.Equalibrium.rarity = self.rarity
+end
 function Item:updateCollision()
     if self.collisions.interact ~= nil then
         self.collisions.interact:moveTo(self.x,self.y)
