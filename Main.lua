@@ -9,14 +9,13 @@ Items = {}
 Entities = {}
 textures = {}
 player = {}
-camScale = 1
+camScale = 2
 ItemInstances = {}
 
 
 function love.load()
     love.window.setMode(1280,720,{resizable =true,})
     love.graphics.setBackgroundColor( 255,000,255)
-
 
     --Textures
     textures = {player=love.graphics.newImage("Textures/Player.png"),wall1=love.graphics.newImage("Textures/Wall.png"),chest1=love.graphics.newImage("Textures/Chest.png"), item1={sprite=love.graphics.newImage("Textures/Item.png"), icon=love.graphics.newImage("Textures/ItemIcon.png")}}
@@ -33,6 +32,7 @@ function love.draw()
     camera:set()
     camera:setPosition(player.x-love.graphics.getWidth()*(camScale/2),player.y-love.graphics.getHeight()*(camScale/2))
     camera:setScale(camScale, camScale)
+    
     --Player
     love.graphics.draw(player.sprite, player.x, player.y, player.angle, 1, 1, player.sprite:getWidth()/2,player.sprite:getHeight()/2)
     love.graphics.rectangle("line", player.x-player.sprite:getWidth()/2, player.y-player.sprite:getHeight()/2, player.sprite:getWidth(), player.sprite:getHeight())

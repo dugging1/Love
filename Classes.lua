@@ -100,7 +100,6 @@ function Chest:createItems()
             items[i].x = math.random(items[i].x-items[i].sprite:getWidth()*2, items[i].x+items[i].sprite:getWidth()*3)
             items[i].y = math.random(items[i].y-items[i].sprite:getHeight()*2, items[i].y+items[i].sprite:getHeight()*3)
             items[i].draw=true
-            print_r(items[i])
         end
         self.open = true
     end
