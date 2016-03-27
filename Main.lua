@@ -10,6 +10,7 @@ Entities = {}
 textures = {}
 player = {}
 camScale = 1
+ItemInstances = {}
 
 
 function love.load()
@@ -18,9 +19,9 @@ function love.load()
 
 
     --Textures
-    textures = {player=love.graphics.newImage("Player.png"),wall1=love.graphics.newImage("Wall.png"),chest1=love.graphics.newImage("Chest.png"), item1={sprite=love.graphics.newImage("Item.png"), icon=love.graphics.newImage("ItemIcon.png")}}
+    textures = {player=love.graphics.newImage("Textures/Player.png"),wall1=love.graphics.newImage("Textures/Wall.png"),chest1=love.graphics.newImage("Textures/Chest.png"), item1={sprite=love.graphics.newImage("Textures/Item.png"), icon=love.graphics.newImage("Textures/ItemIcon.png")}}
     --Items
-    Items[1] = Item.new({sprite=textures.item1.sprite, icon=textures.item1.icon, image=textures.item1.sprite, rarity=1, fn=function() print("Item1 activate.") end, collisions={interact=SCL.circle(100,100, 25), draw=false}})
+    Items[1] = Item:new({sprite=textures.item1.sprite, icon=textures.item1.icon, image=textures.item1.sprite, rarity=1, fn=function() print("Item1 activate.") end, collisions={interact=SCL.circle(100,100, 25), draw=false}})
     --Entities
     player = Player:new{x=400, y=300, sprite=textures.player, collisions={solid= SCL.rectangle(400,300,128,128), interact=SCL.rectangle(350,250,228,228)}, angle=0}
     --Objects
@@ -42,9 +43,9 @@ function love.draw()
     end
 
     --Items
-    for i=1, len(Items) do
-        if Items[i].draw then
-            love.graphics.draw(Items[i].sprite, Items[i].x, Items[i].y)
+    for i=1, len(ItemInstances) do
+        if ItemInstances[i].draw then
+            love.graphics.draw(ItemInstances[i].sprite, ItemInstances[i].x, ItemInstances[i].y)
         end
     end
 
@@ -72,7 +73,14 @@ function love.update(dt)
         camScale = camScale - 0.2
     end
     if Keys["q"] then
-        player:interactCheck()
+        local a = player:interactCheck()
+        if type(a) == "table" then
+            for k,v in pairs(a) do
+                if v.type == "Item" then
+                    table.insert(ItemInstances, v)
+                end
+            end
+        end
     end
     --End Key Handling
 end

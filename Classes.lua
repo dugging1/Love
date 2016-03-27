@@ -6,6 +6,42 @@ function len(T)
 end
 --End Useful functions
 
+--Debugging functions
+function print_r ( t )
+    local print_r_cache={}
+    local function sub_print_r(t,indent)
+        if (print_r_cache[tostring(t)]) then
+            print(indent.."*"..tostring(t))
+        else
+            print_r_cache[tostring(t)]=true
+            if (type(t)=="table") then
+                for pos,val in pairs(t) do
+                    if (type(val)=="table") then
+                        print(indent.."["..pos.."] => "..tostring(t).." {")
+                        sub_print_r(val,indent..string.rep(" ",string.len(pos)+8))
+                        print(indent..string.rep(" ",string.len(pos)+6).."}")
+                    elseif (type(val)=="string") then
+                        print(indent.."["..pos..'] => "'..val..'"')
+                    else
+                        print(indent.."["..pos.."] => "..tostring(val))
+                    end
+                end
+            else
+                print(indent..tostring(t))
+            end
+        end
+    end
+    if (type(t)=="table") then
+        print(tostring(t).." {")
+        sub_print_r(t,"  ")
+        print("}")
+    else
+        sub_print_r(t,"  ")
+    end
+    print()
+end
+--End Debugging functions
+
 
 
 --Object Base Class
@@ -33,6 +69,7 @@ end
 function Object:new(o)
     o = o or {}
     setmetatable(o, self)
+    o.type = self.type
     self.__index = self
     return o
 end
@@ -54,18 +91,23 @@ Chest = IntObject:new()
 Chest.type = "Chest"
 function Chest:createItems()
     local items = {}
-
-    for i,v in pairs(self.items) do
-        print(v.type)
-        table.insert(items, v:new())
-        items[i].x = math.random(items[i].x-items[i].sprite:getWidth()*2, items[i].x+items[i].sprite:getWidth()*3)
-        items[i].y = math.random(items[i].y-items[i].sprite:getHeight()*2, items[i].y+items[i].sprite:getHeight()*3)
-        items[i].draw=true
+    if not self.open then
+        for i,v in pairs(self.items) do
+            table.insert(items, v:new())
+            for ii,vv in pairs(self.items[i]) do
+                items[i][ii] = vv
+            end
+            items[i].x = math.random(items[i].x-items[i].sprite:getWidth()*2, items[i].x+items[i].sprite:getWidth()*3)
+            items[i].y = math.random(items[i].y-items[i].sprite:getHeight()*2, items[i].y+items[i].sprite:getHeight()*3)
+            items[i].draw=true
+            print_r(items[i])
+        end
+        self.open = true
     end
     return items
 end
 function Chest:interact(...)
-    self:createItems()
+    return self:createItems()
 end
 --End Chest Class
 
@@ -109,15 +151,14 @@ function Player:interactCheck()
             end
         end
     end
-    if collides ~= nil then
+    if collides ~= nil and len(collides) > 0 then
         local key, value = 0, 0
         for i=1, len(collides) do
             if collides[i][2] > value then
                 key, value = i, collides[i][2]
             end
         end
-        collides[key][1].interact(collides[key][1])
-        return true
+        return collides[key][1].interact(collides[key][1])
     end
     return false
 end
@@ -125,13 +166,8 @@ end
 
 
 --Item Class << Object
-Item = Object:new()
-Item.type = "Item"
-Item.icon = ""
-Item.image= ""
-Item.stats= {}
-Item.rarity=0
-Item.fn=function(...)error "Item function not defined" end
+Item = Object:new({icon="", image="", stats={}, rarity=0, fn=function(...)error "Item function not defined" end})
+Item.type="Item"
 function Item:updateCollision()
     if self.collisions.interact ~= nil then
         self.collisions.interact:moveTo(self.x,self.y)
