@@ -14,6 +14,14 @@ function love.load()
     love.window.setMode(1280,720,{resizable =true,})
     love.graphics.setBackgroundColor( 255,000,255)
 
+    --Cardinal Misc
+    Cardinal.Equalibrium.total = loadEqualibrium()
+    for i in pairs(Cardinal.Equalibrium.total) do
+        Cardinal.Equalibrium.current[i] = {}
+        for o in pairs(Cardinal.Equalibrium.total[i]) do
+            Cardinal.Equalibrium.current[i][o] = 0
+        end
+    end
     --Textures
     Cardinal.textures = loadTextures()
     --Items
@@ -22,6 +30,7 @@ function love.load()
     Cardinal.players[1] = Player:new{x=400, y=300, sprite=Cardinal.textures.player, collisions={solid= SCL.rectangle(400,300,100,60), interact=SCL.rectangle(350,250,300,260), pickUp=SCL.circle(400,300,250)}, angle=0}
     --Objects
     Cardinal.Objects = loadObjects()
+
 
     for i=1,len(Cardinal.Objects) do
         Cardinal.Objects[i]:updateSolidCollision()

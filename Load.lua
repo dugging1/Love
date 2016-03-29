@@ -27,3 +27,11 @@ function loadObjects()
 
     return temp
 end
+
+function loadEqualibrium()
+    local total = {Items={}, Mobs={}}
+    total.Items.rarity = 100
+    total.Mobs.EXP = 100
+
+    return total
+end
