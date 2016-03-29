@@ -3,9 +3,11 @@ SCL = require 'HC'
 Cam = require 'camera'
 Cardinal = require 'Cardinal'
 require 'Classes'
+require 'Load'
 
 Keys = {}
 camScale = 2
+MouseCollide = SCL.circle(0, 0, 30)
 
 
 function love.load()
@@ -13,14 +15,13 @@ function love.load()
     love.graphics.setBackgroundColor( 255,000,255)
 
     --Textures
-    Cardinal.textures = {player=love.graphics.newImage("Textures/Player.png"),wall1=love.graphics.newImage("Textures/Wall.png"),chest1=love.graphics.newImage("Textures/Chest.png"), item1={sprite=love.graphics.newImage("Textures/Sword_1.png"), icon=love.graphics.newImage("Textures/ItemIcon.png")}}
+    Cardinal.textures = loadTextures()
     --Items
-    Cardinal.Items[1] = Item:new({sprite=Cardinal.textures.item1.sprite, icon=Cardinal.textures.item1.icon, image=Cardinal.textures.item1.sprite, rarity=1, fn=function() print("Item1 activate.") end, collisions={interact=SCL.circle(100,100, 25), draw=false}})
+    Cardinal.Items = loadItems()
     --Entities
-    table.insert(Cardinal.players, Player:new{x=400, y=300, sprite=Cardinal.textures.player, collisions={solid= SCL.rectangle(400,300,100,60), interact=SCL.rectangle(350,250,200,160)}, angle=0})
+    Cardinal.players[1] = Player:new{x=400, y=300, sprite=Cardinal.textures.player, collisions={solid= SCL.rectangle(400,300,100,60), interact=SCL.rectangle(350,250,300,260), pickUp=SCL.circle(400,300,250)}, angle=0}
     --Objects
-    table.insert(Cardinal.Objects, Wall:new{x=0, y=0, sprite=Cardinal.textures.wall1, collisions={solid= SCL.rectangle(100,200,350,240)}})
-    table.insert(Cardinal.Objects, Chest:new{x=600, y=800, sprite=Cardinal.textures.chest1, collisions={solid= SCL.rectangle(600,800,60,85), interact=SCL.rectangle(550,750,160,185)}, items={Cardinal.Items[1]}})
+    Cardinal.Objects = loadObjects()
 
     for i=1,len(Cardinal.Objects) do
         Cardinal.Objects[i]:updateSolidCollision()
@@ -32,21 +33,35 @@ function love.draw()
     camera:setPosition(Cardinal.players[1].x-love.graphics.getWidth()*(camScale/2), Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2))
     camera:setScale(camScale, camScale)
 
+    --Debugging
+    MouseCollide:draw('line')
+    Cardinal.players[1].collisions.interact:draw('line')
+    Cardinal.players[1].collisions.solid:draw('line')
+    Cardinal.players[1].collisions.pickUp:draw('line')
+
     --Player
     love.graphics.draw(Cardinal.players[1].sprite, Cardinal.players[1].x, Cardinal.players[1].y, Cardinal.players[1].angle, 1, 1, Cardinal.players[1].sprite:getWidth()/2, Cardinal.players[1].sprite:getHeight()/2)
-    love.graphics.rectangle("line", Cardinal.players[1].x- Cardinal.players[1].sprite:getWidth()/2, Cardinal.players[1].y- Cardinal.players[1].sprite:getHeight()/2, Cardinal.players[1].sprite:getWidth(), Cardinal.players[1].sprite:getHeight())
+
 
     --Objects
     for i=1,len(Cardinal.Objects) do
         love.graphics.draw(Cardinal.Objects[i].sprite, Cardinal.Objects[i].x, Cardinal.Objects[i].y)
+        Cardinal.Objects[i].collisions.solid:draw('line')
     end
 
     --Items
     for i=1, len(Cardinal.ItemInstances) do
         if Cardinal.ItemInstances[i].draw then
             love.graphics.draw(Cardinal.ItemInstances[i].sprite, Cardinal.ItemInstances[i].x, Cardinal.ItemInstances[i].y)
+            Cardinal.ItemInstances[i].collisions.interact:draw('line')
         end
     end
+
+    --GUI
+    love.graphics.draw(Cardinal.textures.HealthBar,Cardinal.players[1].x-love.graphics.getWidth()*(camScale/2)+30,Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30, 0, 2, 2)
+    love.graphics.draw(Cardinal.textures.GUIEquip, Cardinal.players[1].x+love.graphics.getWidth()*(camScale/2)-750, Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30)
+    Cardinal.players[1]:drawEquipment(Cardinal.players[1].x+love.graphics.getWidth()*(camScale/2)-750, Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30)
+    Cardinal.players[1]:drawInventory(Cardinal.players[1].x+love.graphics.getWidth()*(camScale/2)-750, Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30+Cardinal.textures.GUIEquip:getHeight())
 
     camera:unset()
 end
@@ -54,7 +69,9 @@ end
 function love.update(dt)
     local x, y = camera:mousePosition()
     local newWPos = {y= Cardinal.players[1].y + (y- Cardinal.players[1].y)*dt,x = Cardinal.players[1].x + (x- Cardinal.players[1].x)*dt}
-    local newSPos = {y= Cardinal.players[1].y - (y- Cardinal.players[1].y)*dt,x = Cardinal.players[1].x - (x- Cardinal.players[1].x)*dt}
+    local newSPos = {y= Cardinal.players[1].y - (y- Cardinal.players[1].y)*dt,x = Cardinal.players[1].x - (x- Cardinal.players[1].x)*dt }
+
+    MouseCollide:moveTo(x, y)
 
     Cardinal.players[1]:update()
 
@@ -77,9 +94,33 @@ function love.update(dt)
     if Keys["o"] then
         print_r(Cardinal)
     end
+    if love.mouse.isDown(1) then
+        local collides = {}
+        if Cardinal.players[1].collisions.pickUp:collidesWith(MouseCollide) then
+            for i=1, len(Cardinal.ItemInstances) do
+                if Cardinal.ItemInstances[i].pickUp then
+                    if Cardinal.ItemInstances[i].collisions.interact ~= nil then
+                        if Cardinal.players[1].collisions.pickUp:collidesWith(Cardinal.ItemInstances[i].collisions.interact) then
+                            table.insert(collides, Cardinal.ItemInstances[i])
+                        end
+                    end
+                end
+            end
+            for i=1,len(collides) do
+                print("processing: "..tostring(collides[i].type))
+                Cardinal.players[1]:processItem(collides[i])
+            end
+            --print_r(collides)
+        end
+    end
+    if Keys["e"] then
+        print_r(Cardinal.players[1].Inventory)
+    end
+    if Keys["f"] then
+        print_r(Cardinal.players[1].Equipment)
+    end
     --End Key Handling
 end
-
 
 
 

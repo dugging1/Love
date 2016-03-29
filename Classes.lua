@@ -6,6 +6,7 @@ function len(T)
 end
 --End Useful functions
 
+
 --Debugging functions
 function print_r ( t )
     local print_r_cache={}
@@ -43,7 +44,6 @@ end
 --End Debugging functions
 
 
-
 --Object Base Class
 Object = {type="Object",x=0,y=0,sprite="",collisions={solid={},interact={}}, angle=0}
 function Object:collisionCheck(x, y, collision)
@@ -70,7 +70,6 @@ end
 --End Object Base Class
 
 
-
 --Interact Object Class
 IntObject = Object:new()
 IntObject.type = "IntObject"
@@ -91,9 +90,11 @@ function Chest:createItems()
             for ii,vv in pairs(self.items[i]) do
                 items[i][ii] = vv
             end
-            items[i].x = math.random(items[i].x-items[i].sprite:getWidth()*2, items[i].x+items[i].sprite:getWidth()*3)
-            items[i].y = math.random(items[i].y-items[i].sprite:getHeight()*2, items[i].y+items[i].sprite:getHeight()*3)
+            items[i].x = math.random(self.x-200, self.x+200)
+            items[i].y = math.random(self.y-200, self.y+200)
             items[i].draw=true
+            items[i].pickUp = true
+            items[i]:updateCollision()
         end
         self.open = true
     end
@@ -111,16 +112,30 @@ Wall.type = "Wall"
 --End Wall Class
 
 
-
 --Player Class << Object
-Player = Object:new()
+Player = Object:new({Equipment={}, Inventory={}})
 Player.type = "Player"
+function Player:Equip(Item)
+    if Item.type == "Backpack" then
+        if self.Equipment ~= nil then
+            local a
+            a, self.Equipment[1] = self.Equipment[1], Item
+            return a
+        else
+            self.Equipment[1] = Item
+        end
+    else
+        print("Finish Player:Equip()")
+    end
+end
 function Player:update()
     self:Rotate()
     self.collisions.solid:moveTo(self.x, self.y)
-    self.collisions.solid:rotate(self.angle)
+    self.collisions.solid:setRotation(self.angle)
     self.collisions.interact:moveTo(self.x, self.y)
-    self.collisions.interact:rotate(self.angle)
+    self.collisions.interact:setRotation(self.angle)
+    self.collisions.pickUp:moveTo(self.x, self.y)
+    self.collisions.pickUp:setRotation(self.angle)
 end
 function Player:Move(newPos)
     if not self:collisionCheck(newPos.x, newPos.y, self.collisions.solid) then
@@ -148,15 +163,51 @@ function Player:interactCheck()
                 key, value = i, collides[i][2]
             end
         end
-        return collides[key][1].interact(collides[key][1])
+        return collides[key][1]:interact(collides[key][1])
     end
     return false
+end
+function Player:processItem(Item)
+    if Item.type == "Backpack" and self.Equipment[1] == nil then
+        self:Equip(Item)
+        Item.draw=false
+        Item.x = 0
+        Item.y = 0
+        Item.pickUp = false
+        Item:updateCollision()
+    elseif self.Equipment[1] ~= nil then
+        if self:InvStore(Item) then
+            Item.draw=false
+            Item.x = 0
+            Item.y = 0
+            Item.pickUp = false
+            Item:updateCollision()
+        end
+    end
+end
+function Player:InvStore(Item)
+    if self.Equipment[1] ~= nil then
+        if len(self.Inventory) < self.Equipment[1].Bsize then
+            table.insert(self.Inventory, Item)
+            return true
+        end
+    end
+end
+function Player:drawEquipment(x, y)
+    if self.Equipment[1] ~= nil then
+        love.graphics.draw(self.Equipment[1].icon, x+194, y+50)
+    end
+end
+function Player:drawInventory(x, y)
+    if self.Equipment[1] ~= nil then
+        self.Equipment[1]:Inventory(Cardinal.textures.Inventory, x, y, Cardinal.textures.GUIEquip:getWidth(), self.Inventory)
+    end
 end
 --End Player Class
 
 
 --Item Class << Object
-Item = Object:new({icon="", image="", stats={}, rarity=0, fn=function(...)error "Item function not defined" end, randWeight=0, Equalibrium={rarity=0}})
+Item = Object:new({icon="", image="", stats={}, rarity=0, fn=function(...)error "Item function not defined" end, randWeight=0, Equalibrium={rarity=0}, pickUp=false})
 Item.type="Item"
 function Item:new(o)
     o = o or {}
@@ -171,10 +222,39 @@ function Item:Init()
 end
 function Item:updateCollision()
     if self.collisions.interact ~= nil then
-        self.collisions.interact:moveTo(self.x,self.y)
+        self.collisions.interact:moveTo(self.x+self.sprite:getWidth()/2,self.y+self.sprite:getHeight()/2)
     end
     if self.collisions.solid ~= nil then
-        self.collisions.solid:moveTo(solf.x,self.y)
+        self.collisions.solid:moveTo(self.x+self.sprite:getWidth()/2,self.y+self.sprite:getHeight()/2)
     end
 end
 --End Item Class
+
+
+--Backpack Class << Item
+Backpack = Item:new({icon="", image="", stats={}, rarity=0, randWeight=0, Equalibrium={rarity=0}, Bsize=0})
+Backpack.type = "Backpack"
+function Backpack:Inventory(sprite, x, y, width, inventory)
+    local i = 0
+    local n = math.floor(width/sprite:getWidth())
+    print(width)
+    local Dx = x
+    local Dy = y
+    for a=1,math.ceil(self.Bsize/n) do
+        for l=1, n do
+            i = i + 1
+            if i < self.Bsize+1 then
+                love.graphics.draw(sprite, Dx, Dy)
+                if inventory[i] ~= nil then
+                    love.graphics.draw(inventory[i].icon, Dx,Dy)
+                end
+                Dx = Dx + sprite:getWidth()
+            else
+                break
+            end
+        end
+        Dx = x
+        Dy = Dy + sprite:getHeight()
+    end
+end
+--End Backpack Class
