@@ -34,10 +34,10 @@ function love.draw()
     camera:setScale(camScale, camScale)
 
     --Debugging
-    MouseCollide:draw('line')
-    Cardinal.players[1].collisions.interact:draw('line')
-    Cardinal.players[1].collisions.solid:draw('line')
-    Cardinal.players[1].collisions.pickUp:draw('line')
+    --MouseCollide:draw('line')
+    --Cardinal.players[1].collisions.interact:draw('line')
+    --Cardinal.players[1].collisions.solid:draw('line')
+    --Cardinal.players[1].collisions.pickUp:draw('line')
 
     --Player
     love.graphics.draw(Cardinal.players[1].sprite, Cardinal.players[1].x, Cardinal.players[1].y, Cardinal.players[1].angle, 1, 1, Cardinal.players[1].sprite:getWidth()/2, Cardinal.players[1].sprite:getHeight()/2)
@@ -46,20 +46,19 @@ function love.draw()
     --Objects
     for i=1,len(Cardinal.Objects) do
         love.graphics.draw(Cardinal.Objects[i].sprite, Cardinal.Objects[i].x, Cardinal.Objects[i].y)
-        Cardinal.Objects[i].collisions.solid:draw('line')
+        --Cardinal.Objects[i].collisions.solid:draw('line')
     end
 
     --Items
     for i=1, len(Cardinal.ItemInstances) do
         if Cardinal.ItemInstances[i].draw then
             love.graphics.draw(Cardinal.ItemInstances[i].sprite, Cardinal.ItemInstances[i].x, Cardinal.ItemInstances[i].y)
-            Cardinal.ItemInstances[i].collisions.interact:draw('line')
+            --Cardinal.ItemInstances[i].collisions.interact:draw('line')
         end
     end
 
     --GUI
     love.graphics.draw(Cardinal.textures.HealthBar,Cardinal.players[1].x-love.graphics.getWidth()*(camScale/2)+30,Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30, 0, 2, 2)
-    love.graphics.draw(Cardinal.textures.GUIEquip, Cardinal.players[1].x+love.graphics.getWidth()*(camScale/2)-750, Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30)
     Cardinal.players[1]:drawEquipment(Cardinal.players[1].x+love.graphics.getWidth()*(camScale/2)-750, Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30)
     Cardinal.players[1]:drawInventory(Cardinal.players[1].x+love.graphics.getWidth()*(camScale/2)-750, Cardinal.players[1].y-love.graphics.getHeight()*(camScale/2)+30+Cardinal.textures.GUIEquip:getHeight())
 

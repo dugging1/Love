@@ -194,6 +194,7 @@ function Player:InvStore(Item)
     end
 end
 function Player:drawEquipment(x, y)
+    love.graphics.draw(Cardinal.textures.GUIEquip, x, y)
     if self.Equipment[1] ~= nil then
         love.graphics.draw(self.Equipment[1].icon, x+194, y+50)
     end
@@ -237,7 +238,6 @@ Backpack.type = "Backpack"
 function Backpack:Inventory(sprite, x, y, width, inventory)
     local i = 0
     local n = math.floor(width/sprite:getWidth())
-    print(width)
     local Dx = x
     local Dy = y
     for a=1,math.ceil(self.Bsize/n) do
